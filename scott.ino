@@ -373,8 +373,8 @@
        |       X----------X----------X----------X--------------------------------+
        |       |          |          |          |
        |       |   ____   |   ____   |   ____   |          R = 10k
-       +-------+--|_R1_|--+--|_R2_|--+--|_R3_|--+          R1 = R2 = R3 = 820
-       |   ____                                            Ra = Rb = Rc = 3k3
+       +-------+--|_R1_|--+--|_R2_|--+--|_R3_|--+          R1 = R2 = R3 = 4k7
+       |   ____                                            Ra = Rb = Rc = 1k0
        +--|_R__|---GND
 
              Approximate keycode with quadratic function:  keyvalue = 2 * keynr^2 + 470
@@ -973,6 +973,9 @@ static void dfill(byte b) { // Fill screen with byte/pattern b
 // DEFINES
 #define KPIN 3  // Pin to read analog keyboard  (H2 = D3)
 #define BITEXP 0x01
+#define COLS  4
+#define ROWS  4
+#define KEYS  (ROWS * COLS)
 
 // Keychars
 #define KEY_1 '?' // SHIFT    1-?  2-7  3-8  4-9
@@ -992,32 +995,38 @@ static void dfill(byte b) { // Fill screen with byte/pattern b
 #define KEY_15 ':' // DOT
 #define KEY_16 '=' // ENTER
 
+// Resistors
+#define RCOL  4700
+#define RROW  1000
+#define RGND  10000
+
 static int getbutton(void) { // Returns analog value measured on keyboard pin
   return (analogRead(KPIN));
 }
 
 static byte getkeycode(void) { // Returns key character due to analog value
   int b = getbutton();
-  const byte keys[] = {KEY_16, KEY_15, KEY_14, KEY_13, KEY_12, KEY_11, KEY_10, KEY_9, KEY_8, KEY_7, KEY_6, KEY_5, KEY_4, KEY_3, KEY_2, KEY_1};
-  if (b < 231)return (NULL); // No key pressed
-  else return (keys[(byte)(_exp_sin_asin(0.5 * log(b / 2 - 235), BITEXP) - 1)]); // Approximate keys with quadratic function
-  /*if (b < 231)return (NULL); // No key pressed
-    else if (b < 470) return (KEY_16);
-    else if (b < 488) return (KEY_15);
-    else if (b < 508) return (KEY_14);
-    else if (b < 529) return (KEY_13);
-    else if (b < 552) return (KEY_12);
-    else if (b < 578) return (KEY_11);
-    else if (b < 606) return (KEY_10);
-    else if (b < 637) return (KEY_9);
-    else if (b < 661) return (KEY_8);
-    else if (b < 708) return (KEY_7);
-    else if (b < 751) return (KEY_6);
-    else if (b < 799) return (KEY_5);
-    else if (b < 853) return (KEY_4);
-    else if (b < 915) return (KEY_3);
-    else if (b < 986) return (KEY_2);
-    else return (KEY_1);*/
+  byte result = 255;
+  const byte keys[] = {KEY_16, KEY_15, KEY_14, KEY_13,
+                       KEY_12, KEY_11, KEY_10, KEY_9,
+                       KEY_8,  KEY_7,  KEY_6,  KEY_5,
+                       KEY_4,  KEY_3,  KEY_2,  KEY_1
+                      };
+  if (b < 100) return (NULL); // No key pressed
+  uint8_t k = KEYS;
+  for (uint8_t c = COLS; c > 0; c--) {
+    for (uint8_t r = ROWS; r > 0; r--) {
+      uint16_t v = (1024.0 * RGND) / (RGND + (RROW * (r - 1)) + (RCOL * (c - 1)));
+      k--;
+      if (b < (v + 5)) {
+        result = k;
+        break;
+      }
+    }
+    if (result < 255)
+      break;
+  }
+  return result;
 }
 
 
@@ -1240,8 +1249,8 @@ const char c30[] PROGMEM = "<1"; //  ... Play user keys
 const char c31[] PROGMEM = "<2"; //
 const char c32[] PROGMEM = "<3"; //
 const char* const cmd[] PROGMEM = {
-  c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16, c17, c18, c19, c20,
-  c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32
+  c0, c1, c2, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12, c13, c14, c15, c16,
+  c17, c18, c19, c20, c21, c22, c23, c24, c25, c26, c27, c28, c29, c30, c31, c32
 };
 #define numberofcommands (sizeof(cmd)/sizeof(const char *))
 
