@@ -995,38 +995,35 @@ static void dfill(byte b) { // Fill screen with byte/pattern b
 #define KEY_15 ':' // DOT
 #define KEY_16 '=' // ENTER
 
-// Resistors
-#define RCOL  4700
-#define RROW  1000
-#define RGND  10000
-
 static int getbutton(void) { // Returns analog value measured on keyboard pin
   return (analogRead(KPIN));
 }
 
 static byte getkeycode(void) { // Returns key character due to analog value
   int b = getbutton();
-  byte result = 255;
-  const byte keys[] = {KEY_16, KEY_15, KEY_14, KEY_13,
+  /*
+    const byte keys[] = {KEY_16, KEY_15, KEY_14, KEY_13,
                        KEY_12, KEY_11, KEY_10, KEY_9,
                        KEY_8,  KEY_7,  KEY_6,  KEY_5,
                        KEY_4,  KEY_3,  KEY_2,  KEY_1
                       };
-  if (b < 100) return (NULL); // No key pressed
-  uint8_t k = KEYS;
-  for (uint8_t c = COLS; c > 0; c--) {
-    for (uint8_t r = ROWS; r > 0; r--) {
-      uint16_t v = (1024.0 * RGND) / (RGND + (RROW * (r - 1)) + (RCOL * (c - 1)));
-      k--;
-      if (b < (v + 5)) {
-        result = k;
-        break;
-      }
-    }
-    if (result < 255)
+  */
+  const byte keys[] = {KEY_13, KEY_14, KEY_15, KEY_16,
+                       KEY_9,  KEY_10, KEY_11, KEY_12,
+                       KEY_5,  KEY_6,  KEY_7,  KEY_8,
+                       KEY_1,  KEY_2,  KEY_3,  KEY_4
+                      };
+  const int levels[] = {1024, 933, 855, 788,
+                        697,  652, 614, 579,
+                        527,  502, 478, 456,
+                        425,  407, 391, 377
+                       };
+  if (b < 300) return (NULL); // No key pressed
+  uint8_t k;
+  for (k = KEYS; k > 0; k--)
+    if (b < (levels[k - 1] + 5))
       break;
-  }
-  return result;
+  return keys[k - 1];
 }
 
 
@@ -1805,5 +1802,4 @@ void loop() {
     }
     printscreen(); // Print screen every keypress (or if key == KEY_DUMMY)
   }
-
 }
