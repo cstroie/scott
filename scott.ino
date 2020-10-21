@@ -1615,6 +1615,7 @@ static double _exp_sin_asin(double f, byte nr) { // Calculate exp, sin or asin
 static void printfloat(double f, byte mh, byte y) { // Print float with mantissa height (mh) at line y
   long m; // Mantissa
   int8_t e; // Exponent
+  int8_t p; // Decimal point position
   sbuf[0] = CHARSPACE; // * Create sign
   if (f < 0.0) {
     f = - f;
@@ -1628,19 +1629,25 @@ static void printfloat(double f, byte mh, byte y) { // Print float with mantissa
     sbuf[i] = _ones(m) + '0';
     m /= 10;
   }
+  p = e % 3;
+  e -= p;
+  if (p < 0) {
+    e -= 3;
+    p += 3;
+  }
   sbuf[7] = e < 0 ? '-' : CHARSPACE; // * Create exponent
   if (e < 0) e = -e;
   sbuf[8] = e >= 10 ? _tens(e) + '0' : '0';
   sbuf[9] = _ones(e) + '0';
-  printcat(sbuf[0], SIZEM, mh , 0, y); // * Print sbuf in float format
-  printcat('.', SIZEM, mh, 23, y);
-  printcat(sbuf[1], SIZEM, mh, 12 , y);
+  printcat('.', SIZEM, mh, 12 * (p + 2) - 1, y); // Print the point first
+  printcat(sbuf[0], SIZEM, mh, 0, y); // * Print sbuf in float format
+  printcat(sbuf[1], SIZEM, mh, 12, y);
   //for (byte i = 2; i < 7; i++) printcat(sbuf[i], 2, mh, 12 * i + 9 , y); // With trailing zeros
   byte nonzero = false; // Suppress trailing zeros
   for (byte i = 6; i > 1; i--)
-    if (sbuf[i] != '0' || nonzero) {
+    if (sbuf[i] != '0' || i <= p + 1 || nonzero) {
       nonzero = true;
-      printcat(sbuf[i], SIZEM, mh, 12 * i + 8 , y);
+      printcat(sbuf[i], SIZEM, mh, 12 * i + (i - p < 2 ? 0 : 8), y);
     }
   for (byte i = 7; i < 10; i++) printcat(sbuf[i], SIZEM, SIZEM, 12 * i + 10 , 0);
 }
